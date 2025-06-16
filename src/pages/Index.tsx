@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { SchemaPanel } from '../components/SchemaPanel';
 import { MappingCanvas } from '../components/MappingCanvas';
@@ -82,7 +81,6 @@ const Index = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50">
-      {/* Header */}
       <div className="bg-white border-b border-gray-200 shadow-sm">
         <div className="px-6 py-4">
           <div className="flex items-center justify-between">
@@ -117,9 +115,7 @@ const Index = () => {
         </div>
       </div>
 
-      {/* Main Content */}
       <div className="flex h-[calc(100vh-88px)]">
-        {/* Source Schema Panel */}
         <div className="w-1/4 border-r border-gray-200 bg-white">
           <SchemaPanel
             title="Source Schema"
@@ -130,7 +126,6 @@ const Index = () => {
           />
         </div>
 
-        {/* Mapping Canvas */}
         <div className="flex-1 relative">
           <MappingCanvas
             sourceFields={sourceSchema}
@@ -142,7 +137,6 @@ const Index = () => {
             onCreateMapping={handleCreateMapping}
           />
           
-          {/* AI Assistant Overlay */}
           {showAI && (
             <div className="absolute top-4 right-4 w-80 z-10">
               <AIAssistant
@@ -150,13 +144,12 @@ const Index = () => {
                 targetFields={targetSchema}
                 mappings={mappings}
                 onSuggestMapping={handleCreateMapping}
-                onClose={() setShowAI(false)}
+                onClose={() => setShowAI(false)}
               />
             </div>
           )}
         </div>
 
-        {/* Target Schema Panel */}
         <div className="w-1/4 border-l border-gray-200 bg-white">
           <SchemaPanel
             title="Target Schema"
@@ -168,7 +161,6 @@ const Index = () => {
         </div>
       </div>
 
-      {/* Transformation Panel */}
       {selectedMapping && (
         <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 shadow-lg">
           <TransformationPanel
