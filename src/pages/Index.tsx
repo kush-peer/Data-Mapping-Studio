@@ -3,8 +3,9 @@ import { SchemaPanel } from '../components/SchemaPanel';
 import { MappingCanvas } from '../components/MappingCanvas';
 import { TransformationPanel } from '../components/TransformationPanel';
 import { AIAssistant } from '../components/AIAssistant';
+import { FileUploadPanel } from '../components/FileUploadPanel';
 import { Toolbar } from '../components/Toolbar';
-import { Bot, Save, Play, Download } from 'lucide-react';
+import { Bot, Save, Play, Download, Upload } from 'lucide-react';
 import { Button } from '../components/ui/button';
 import { useToast } from '../hooks/use-toast';
 
@@ -59,6 +60,7 @@ const Index = () => {
   const [mappings, setMappings] = useState<FieldMapping[]>([]);
   const [selectedMapping, setSelectedMapping] = useState<string | null>(null);
   const [showAI, setShowAI] = useState(false);
+  const [showFileUpload, setShowFileUpload] = useState(false);
 
   const handleCreateMapping = (sourceId: string, targetId: string) => {
     const newMapping: FieldMapping = {
@@ -82,8 +84,20 @@ const Index = () => {
     }
   };
 
+  const handleSchemaUpload = (fields: SchemaField[], type: 'source' | 'target') => {
+    if (type === 'source') {
+      setSourceSchema(fields);
+    } else {
+      setTargetSchema(fields);
+    }
+    
+    toast({
+      title: "Schema Uploaded",
+      description: `Successfully uploaded ${fields.length} fields to ${type} schema.`,
+    });
+  };
+
   const handleSave = () => {
-    // Simulate save functionality
     const mappingData = {
       sourceSchema,
       targetSchema,
@@ -91,7 +105,6 @@ const Index = () => {
       timestamp: new Date().toISOString()
     };
     
-    // In a real app, this would save to a backend
     localStorage.setItem('rcm-mappings', JSON.stringify(mappingData));
     
     toast({
@@ -110,7 +123,6 @@ const Index = () => {
       return;
     }
 
-    // Simulate test functionality
     toast({
       title: "Test Complete",
       description: `Tested ${mappings.length} mappings - all connections verified.`,
@@ -154,6 +166,14 @@ const Index = () => {
               <p className="text-sm text-gray-600 mt-1">Map and transform healthcare data with AI assistance</p>
             </div>
             <div className="flex items-center gap-3">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setShowFileUpload(true)}
+              >
+                <Upload className="w-4 h-4 mr-2" />
+                Upload Schema
+              </Button>
               <Button
                 variant="outline"
                 size="sm"
@@ -238,6 +258,13 @@ const Index = () => {
             onClose={() => setSelectedMapping(null)}
           />
         </div>
+      )}
+
+      {showFileUpload && (
+        <FileUploadPanel
+          onSchemaUpload={handleSchemaUpload}
+          onClose={() => setShowFileUpload(false)}
+        />
       )}
     </div>
   );
