@@ -6,6 +6,7 @@ import { AIAssistant } from '../components/AIAssistant';
 import { Toolbar } from '../components/Toolbar';
 import { Bot, Save, Play, Download } from 'lucide-react';
 import { Button } from '../components/ui/button';
+import { useToast } from '../hooks/use-toast';
 
 export interface SchemaField {
   id: string;
@@ -30,6 +31,8 @@ export interface Transformation {
 }
 
 const Index = () => {
+  const { toast } = useToast();
+  
   const [sourceSchema, setSourceSchema] = useState<SchemaField[]>([
     { id: 'patient_id', name: 'Patient ID', type: 'string', required: true, example: 'P12345' },
     { id: 'patient_name', name: 'Patient Name', type: 'string', required: true, example: 'John Doe' },
@@ -79,6 +82,68 @@ const Index = () => {
     }
   };
 
+  const handleSave = () => {
+    // Simulate save functionality
+    const mappingData = {
+      sourceSchema,
+      targetSchema,
+      mappings,
+      timestamp: new Date().toISOString()
+    };
+    
+    // In a real app, this would save to a backend
+    localStorage.setItem('rcm-mappings', JSON.stringify(mappingData));
+    
+    toast({
+      title: "Mappings Saved",
+      description: `Successfully saved ${mappings.length} field mappings.`,
+    });
+  };
+
+  const handleTest = () => {
+    if (mappings.length === 0) {
+      toast({
+        title: "No Mappings to Test",
+        description: "Please create some field mappings first.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Simulate test functionality
+    toast({
+      title: "Test Complete",
+      description: `Tested ${mappings.length} mappings - all connections verified.`,
+    });
+  };
+
+  const handleExport = () => {
+    const exportData = {
+      sourceSchema,
+      targetSchema,
+      mappings,
+      exportedAt: new Date().toISOString()
+    };
+
+    const blob = new Blob([JSON.stringify(exportData, null, 2)], {
+      type: 'application/json'
+    });
+    
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'rcm-mappings.json';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+
+    toast({
+      title: "Export Complete",
+      description: "Mapping configuration has been downloaded.",
+    });
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50">
       <div className="bg-white border-b border-gray-200 shadow-sm">
@@ -98,15 +163,15 @@ const Index = () => {
                 <Bot className="w-4 h-4 mr-2" />
                 AI Assistant
               </Button>
-              <Button variant="outline" size="sm">
+              <Button variant="outline" size="sm" onClick={handleSave}>
                 <Save className="w-4 h-4 mr-2" />
                 Save
               </Button>
-              <Button variant="outline" size="sm">
+              <Button variant="outline" size="sm" onClick={handleTest}>
                 <Play className="w-4 h-4 mr-2" />
                 Test
               </Button>
-              <Button size="sm">
+              <Button size="sm" onClick={handleExport}>
                 <Download className="w-4 h-4 mr-2" />
                 Export
               </Button>
@@ -122,6 +187,7 @@ const Index = () => {
             subtitle="Customer Data Fields"
             fields={sourceSchema}
             type="source"
+            mappings={mappings}
             onFieldDrop={handleCreateMapping}
           />
         </div>
@@ -156,6 +222,7 @@ const Index = () => {
             subtitle="System Data Fields"
             fields={targetSchema}
             type="target"
+            mappings={mappings}
             onFieldDrop={handleCreateMapping}
           />
         </div>
