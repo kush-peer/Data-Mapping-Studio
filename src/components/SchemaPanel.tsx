@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { SchemaField, FieldMapping } from '../pages/Index';
 import { Database, FileText, Hash, Calendar, ToggleLeft, Layers, List, CheckCircle } from 'lucide-react';
@@ -10,6 +9,7 @@ interface SchemaPanelProps {
   type: 'source' | 'target';
   mappings?: FieldMapping[];
   onFieldDrop: (sourceId: string, targetId: string) => void;
+  fieldRefs?: React.MutableRefObject<{ [fieldId: string]: HTMLDivElement | null }>;
 }
 
 const getFieldIcon = (type: string) => {
@@ -42,7 +42,8 @@ export const SchemaPanel: React.FC<SchemaPanelProps> = ({
   fields,
   type,
   mappings = [],
-  onFieldDrop
+  onFieldDrop,
+  fieldRefs
 }) => {
   const handleDragStart = (e: React.DragEvent, fieldId: string) => {
     e.dataTransfer.setData('text/plain', JSON.stringify({ fieldId, type }));
@@ -103,6 +104,7 @@ export const SchemaPanel: React.FC<SchemaPanelProps> = ({
           return (
             <div
               key={field.id}
+              ref={el => fieldRefs && (fieldRefs.current[field.id] = el)}
               draggable
               onDragStart={(e) => handleDragStart(e, field.id)}
               onDragOver={handleDragOver}

@@ -99,5 +99,16 @@
 
   body {
     @apply bg-background text-foreground;
+    font-family: 'Avenir Next LT Pro', 'Inter', 'Roboto', sans-serif;
+    font-size: 18px;
+    background: #F8FAFC;
+    color: #1A237E;
+  }
+
+  html {
+    font-family: 'Avenir Next LT Pro', 'Inter', 'Roboto', sans-serif;
+    font-size: 18px;
+    background: #F8FAFC;
+    color: #1A237E;
   }
 }

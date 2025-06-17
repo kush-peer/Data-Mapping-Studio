@@ -1,11 +1,10 @@
-
 import React, { useState, useRef } from 'react';
 import { Button } from './ui/button';
 import { SchemaField } from '../pages/Index';
 import { Upload, FileText, X } from 'lucide-react';
 
 interface FileUploadPanelProps {
-  onSchemaUpload: (fields: SchemaField[], type: 'source' | 'target') => void;
+  onSchemaUpload: (fields: SchemaField[], type: 'source' | 'target', name?: string) => void;
   onClose: () => void;
 }
 
@@ -15,6 +14,7 @@ export const FileUploadPanel: React.FC<FileUploadPanelProps> = ({
 }) => {
   const [uploadType, setUploadType] = useState<'source' | 'target'>('source');
   const [selectedFormat, setSelectedFormat] = useState<string>('json');
+  const [schemaName, setSchemaName] = useState("");
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const parseCSV = (content: string): SchemaField[] => {
@@ -100,7 +100,7 @@ export const FileUploadPanel: React.FC<FileUploadPanelProps> = ({
       }
 
       if (fields.length > 0) {
-        onSchemaUpload(fields, uploadType);
+        onSchemaUpload(fields, uploadType, schemaName || file.name);
         onClose();
       }
     };
@@ -113,7 +113,7 @@ export const FileUploadPanel: React.FC<FileUploadPanelProps> = ({
       <div className="bg-white rounded-lg shadow-xl max-w-md w-full p-6">
         <div className="flex items-center justify-between mb-4">
           <h3 className="text-lg font-semibold">Upload Schema File</h3>
-          <Button variant="ghost" size="sm" onClick={onClose}>
+          <Button className="btn-nav" onClick={onClose}>
             <X className="w-4 h-4" />
           </Button>
         </div>
@@ -160,6 +160,17 @@ export const FileUploadPanel: React.FC<FileUploadPanelProps> = ({
           </div>
 
           <div>
+            <label className="text-sm font-medium text-gray-700">Schema Name</label>
+            <input
+              type="text"
+              className="w-full mt-1 p-2 border rounded"
+              placeholder="Enter schema name (optional)"
+              value={schemaName}
+              onChange={e => setSchemaName(e.target.value)}
+            />
+          </div>
+
+          <div>
             <input
               ref={fileInputRef}
               type="file"
@@ -169,8 +180,7 @@ export const FileUploadPanel: React.FC<FileUploadPanelProps> = ({
             />
             <Button
               onClick={() => fileInputRef.current?.click()}
-              className="w-full"
-              variant="outline"
+              className="w-full btn-primary"
             >
               <Upload className="w-4 h-4 mr-2" />
               Select File

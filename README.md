@@ -1,73 +1,145 @@
-# Welcome to your Lovable project
+# Field Fusion AI - Data Mapping Platform
 
-## Project info
+## ⚠️ Private Repository Notice
 
-**URL**: https://lovable.dev/projects/331898af-790d-440c-9959-48cf08901bbd
+**This is a private repository. This software and its source code are proprietary and confidential. Unauthorized use, distribution, or modification without explicit written permission is strictly prohibited.**
 
-## How can I edit this code?
+## Project Overview
 
-There are several ways of editing your application.
+Field Fusion AI is an intelligent data integration and mapping platform designed to streamline the process of connecting and transforming data between different systems. The platform provides a visual interface for creating field mappings, supports AI-assisted mapping suggestions, and offers comprehensive data transformation capabilities.
 
-**Use Lovable**
+## Key Features
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/331898af-790d-440c-9959-48cf08901bbd) and start prompting.
+- **Visual Field Mapping**: Drag-and-drop interface for creating field connections
+- **AI-Powered Suggestions**: Intelligent mapping recommendations using AI
+- **Schema Management**: Support for multiple source and target schemas
+- **Data Transformation**: Built-in transformation rules and custom logic
+- **Export/Import**: Save and load mapping configurations
+- **Real-time Validation**: Test mappings before deployment
 
-Changes made via Lovable will be committed automatically to this repo.
+## Development Setup
 
-**Use your preferred IDE**
+### Prerequisites
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
+- Node.js (v18 or higher)
+- npm or yarn package manager
 
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
+### Installation
 
-Follow these steps:
-
+1. Clone the repository:
 ```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
+git clone <YOUR_REPOSITORY_URL>
+```
 
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
+2. Navigate to the project directory:
+```sh
+cd field-fusion-ai
+```
 
-# Step 3: Install the necessary dependencies.
-npm i
+3. Install dependencies:
+```sh
+npm install
+```
 
-# Step 4: Start the development server with auto-reloading and an instant preview.
+4. Start the development server:
+```sh
 npm run dev
 ```
 
-**Edit a file directly in GitHub**
+5. Open your browser and navigate to `http://localhost:8080`
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+## Available Scripts
 
-**Use GitHub Codespaces**
+- `npm run dev` - Start development server
+- `npm run build` - Build for production
+- `npm run preview` - Preview production build
+- `npm run lint` - Run ESLint
+- `npm run type-check` - Run TypeScript type checking
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+## Technology Stack
 
-## What technologies are used for this project?
+- **Frontend Framework**: React 18 with TypeScript
+- **Build Tool**: Vite
+- **Styling**: Tailwind CSS
+- **UI Components**: shadcn/ui
+- **Routing**: React Router
+- **State Management**: React Hooks
+- **Icons**: Lucide React
+- **HTTP Client**: TanStack Query
 
-This project is built with:
+## Project Structure
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
+```
+src/
+├── components/          # Reusable UI components
+│   ├── ui/             # Base UI components (shadcn/ui)
+│   ├── MappingCanvas.tsx
+│   ├── SchemaPanel.tsx
+│   ├── AIAssistant.tsx
+│   └── ...
+├── pages/              # Page components
+│   ├── Index.tsx       # Main mapping interface
+│   ├── Configuration.tsx
+│   └── NotFound.tsx
+├── hooks/              # Custom React hooks
+├── lib/                # Utility functions
+└── App.tsx             # Main application component
+```
 
-## How can I deploy this project?
+## Configuration
 
-Simply open [Lovable](https://lovable.dev/projects/331898af-790d-440c-9959-48cf08901bbd) and click on Share -> Publish.
+The application supports configuration through the Configuration page, including:
+- Source system settings
+- Destination system settings
+- API credentials
+- Custom transformation rules
 
-## Can I connect a custom domain to my Lovable project?
+## Usage
 
-Yes, you can!
+1. **Upload Schemas**: Import your source and target data schemas
+2. **Create Mappings**: Use the visual interface to map fields between systems
+3. **Configure Transformations**: Set up data transformation rules
+4. **Test Mappings**: Validate your configurations
+5. **Export**: Save your mapping configuration for deployment
 
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
+## Deployment
 
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/tips-tricks/custom-domain#step-by-step-guide)
+### Production Build
+
+1. Build the project:
+```sh
+npm run build
+```
+
+2. The built files will be in the `dist` directory
+
+### Deployment Options
+
+- **Static Hosting**: Deploy the `dist` directory to services like Netlify, Vercel, or AWS S3
+- **Docker**: Containerize the application for deployment
+- **CDN**: Serve static files through a CDN for better performance
+
+## Security Considerations
+
+- Store sensitive configuration data securely
+- Use environment variables for API keys and credentials
+- Implement proper authentication for production deployments
+- Regularly update dependencies for security patches
+
+## Contributing
+
+This is a private repository. All contributions must be approved by the repository owner.
+
+## License
+
+**PRIVATE AND CONFIDENTIAL**
+
+This software is proprietary and confidential. All rights reserved.
+
+## Support
+
+For support or questions regarding this private repository, please contact the repository owner directly.
+
+---
+
+**Last Updated**: December 2024
