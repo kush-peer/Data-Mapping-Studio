@@ -4,7 +4,6 @@ import { MappingCanvas } from '../components/MappingCanvas';
 import { TransformationPanel } from '../components/TransformationPanel';
 import { AIAssistant } from '../components/AIAssistant';
 import { FileUploadPanel } from '../components/FileUploadPanel';
-import { Toolbar } from '../components/Toolbar';
 import { Bot, Save, Play, Download, Upload } from 'lucide-react';
 import { Button } from '../components/ui/button';
 import { useToast } from '../hooks/use-toast';
