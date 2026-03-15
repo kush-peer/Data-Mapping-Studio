@@ -1,52 +1,106 @@
-# Field Fusion AI - Data Mapping Platform
+# Data Mapping Studio - AI-Driven Healthcare Data Integration
 
-## ⚠️ Private Repository Notice
+An open-source, AI-native data mapping platform that kills paid tools like Talend, Informatica, and Zapier. Built for healthcare data workflows with comprehensive support for EDI X12, CSV, and future connectors.
 
-**This is a private repository. This software and its source code are proprietary and confidential. Unauthorized use, distribution, or modification without explicit written permission is strictly prohibited.**
+## 🎯 Mission
 
-## Project Overview
+Provide healthcare organizations with a **free, open-source, self-hostable** alternative to expensive data integration platforms. Powered by Claude AI for intelligent schema detection, field mapping suggestions, and transformation code generation.
 
-Field Fusion AI is an intelligent data integration and mapping platform designed to streamline the process of connecting and transforming data between different systems. The platform provides a visual interface for creating field mappings, supports AI-assisted mapping suggestions, and offers comprehensive data transformation capabilities.
+## ⭐ Why Data Mapping Studio?
 
-## Key Features
+| Feature | This Tool | Talend | Informatica | Zapier |
+|---------|-----------|--------|-------------|--------|
+| **Cost** | FREE | $$$$ | $$$$ | Monthly SaaS |
+| **Self-Hosted** | ✅ Yes | ⚠️ Enterprise only | ✅ Yes | ❌ No |
+| **AI-Powered** | ✅ Claude | ❌ None | ❌ None | ⚠️ Limited |
+| **Healthcare Focus** | ✅ Yes | ⚠️ Generic | ⚠️ Generic | ⚠️ Generic |
+| **Setup Time** | 15 minutes | Weeks | Weeks | Hours |
+| **Source Code** | ✅ Open | ❌ Closed | ❌ Closed | ❌ Closed |
 
-- **Visual Field Mapping**: Drag-and-drop interface for creating field connections
-- **AI-Powered Suggestions**: Intelligent mapping recommendations using AI
-- **Schema Management**: Support for multiple source and target schemas
-- **Data Transformation**: Built-in transformation rules and custom logic
-- **Export/Import**: Save and load mapping configurations
-- **Real-time Validation**: Test mappings before deployment
+## ✨ Key Features
 
-## Development Setup
+### Core Capabilities
+- **Visual Field Mapping**: Intuitive drag-and-drop canvas for field connections
+- **AI-Powered Schema Detection**: Upload any healthcare data → Claude auto-detects schema
+- **Intelligent Mapping Suggestions**: Claude analyzes both schemas and suggests smart mappings
+- **Smart Transformations**: AI generates Python transformation code from UI rules
+- **Data Execution**: Run mappings on real data with streaming for memory efficiency
+- **Healthcare-First**: Built for EDI X12, healthcare data standards, and HIPAA compliance
 
-### Prerequisites
+### Data Connectors (MVP)
+- **CSV/Delimited Files**: Auto-detect delimiters, handle encoding
+- **EDI X12**: Parse healthcare claims (837), remittance (835), and more
+- **Phase 2+**: JSON, PostgreSQL, REST APIs, HL7v2, FHIR, S3
 
-- Node.js (v18 or higher)
-- npm or yarn package manager
+### Enterprise Features
+- **Execution History**: Track all data transformations with logs
+- **Sample Preview**: Test mappings on first N records before full execution
+- **Error Tracking**: Detailed error reports per record
+- **Docker-Ready**: One command to run everything locally or deploy
 
-### Installation
+## 🚀 Quick Start
 
-1. Clone the repository:
-```sh
-git clone <YOUR_REPOSITORY_URL>
+### Option 1: Docker (Recommended)
+
+```bash
+# 1. Clone the repository
+git clone https://github.com/your-org/data-mapping-studio.git
+cd data-mapping-studio
+
+# 2. Set up environment
+cp backend/.env.example backend/.env
+# Edit backend/.env and add your Claude API key
+
+# 3. Run with Docker Compose
+docker-compose up
 ```
 
-2. Navigate to the project directory:
-```sh
-cd field-fusion-ai
-```
+Then:
+- **Frontend**: http://localhost:5173
+- **API**: http://localhost:8000
+- **API Docs**: http://localhost:8000/docs
 
-3. Install dependencies:
-```sh
+### Option 2: Local Development
+
+#### Prerequisites
+- Node.js (v18+)
+- Python (3.11+)
+- PostgreSQL (15+)
+- pip package manager
+
+#### Frontend Setup
+
+```bash
 npm install
-```
-
-4. Start the development server:
-```sh
 npm run dev
+# Frontend available at http://localhost:5173
 ```
 
-5. Open your browser and navigate to `http://localhost:8080`
+#### Backend Setup
+
+```bash
+cd backend
+
+# Create Python environment
+python3 -m venv venv
+source venv/bin/activate  # Windows: venv\Scripts\activate
+
+# Install dependencies
+pip install -r requirements.txt
+
+# Set up environment
+cp .env.example .env
+# Edit .env with your settings
+
+# Initialize database
+python -c "from app.database import init_db; init_db()"
+
+# Run server
+python main.py
+# API available at http://localhost:8000
+```
+
+See [backend/README.md](./backend/README.md) for detailed backend documentation.
 
 ## Available Scripts
 
@@ -56,90 +110,190 @@ npm run dev
 - `npm run lint` - Run ESLint
 - `npm run type-check` - Run TypeScript type checking
 
-## Technology Stack
+## 🛠 Technology Stack
 
-- **Frontend Framework**: React 18 with TypeScript
-- **Build Tool**: Vite
-- **Styling**: Tailwind CSS
-- **UI Components**: shadcn/ui
-- **Routing**: React Router
-- **State Management**: React Hooks
-- **Icons**: Lucide React
-- **HTTP Client**: TanStack Query
+### Frontend
+- **React 18** with TypeScript
+- **Vite** (build tool)
+- **Tailwind CSS** (styling)
+- **shadcn/ui** (component library)
+- **React Router** (routing)
+- **Lucide React** (icons)
 
-## Project Structure
+### Backend
+- **Python 3.11+**
+- **FastAPI** (async web framework)
+- **SQLAlchemy** (ORM)
+- **PostgreSQL** (production database, SQLite for development)
+- **Claude API** (AI/LLM integration)
+- **Celery + Redis** (job queue, for Phase 2+)
+
+### Infrastructure
+- **Docker & Docker Compose** (containerization)
+- **Pytest** (testing)
+- **Uvicorn** (ASGI server)
+
+## 📁 Project Structure
 
 ```
-src/
-├── components/          # Reusable UI components
-│   ├── ui/             # Base UI components (shadcn/ui)
-│   ├── MappingCanvas.tsx
-│   ├── SchemaPanel.tsx
-│   ├── AIAssistant.tsx
-│   └── ...
-├── pages/              # Page components
-│   ├── Index.tsx       # Main mapping interface
-│   ├── Configuration.tsx
-│   └── NotFound.tsx
-├── hooks/              # Custom React hooks
-├── lib/                # Utility functions
-└── App.tsx             # Main application component
+data-mapping-studio/
+├── frontend/                    # React frontend
+│   ├── src/
+│   │   ├── components/         # UI components
+│   │   ├── pages/              # Page components
+│   │   ├── hooks/              # Custom hooks
+│   │   └── App.tsx
+│   ├── package.json
+│   └── vite.config.ts
+│
+├── backend/                     # Python FastAPI backend
+│   ├── app/
+│   │   ├── api/routes/         # API endpoints
+│   │   ├── connectors/         # Data connectors (CSV, EDI, etc.)
+│   │   ├── engine/             # Execution engine
+│   │   ├── models/             # SQLAlchemy ORM models
+│   │   ├── services/           # Business logic (LLM, etc.)
+│   │   └── database/           # Database setup
+│   ├── main.py                 # FastAPI app entry point
+│   ├── requirements.txt
+│   ├── Dockerfile
+│   └── README.md
+│
+├── docker-compose.yml          # Local development setup
+├── README.md                   # This file
+└── .gitignore
 ```
 
-## Configuration
+## 📖 Usage
 
-The application supports configuration through the Configuration page, including:
-- Source system settings
-- Destination system settings
-- API credentials
-- Custom transformation rules
+### Basic Workflow
 
-## Usage
+1. **Create Project** - Organize your mappings by project
+2. **Upload Source Data** - CSV, EDI X12, or any supported format
+3. **Auto-Detect Schema** - Claude AI analyzes your data structure
+4. **Create Target Schema** - Define your output format
+5. **Get Mapping Suggestions** - AI suggests field mappings
+6. **Review & Adjust** - Fine-tune mappings visually
+7. **Test Sample** - Preview output on first N records
+8. **Execute** - Run full transformation
+9. **Download Output** - Get your mapped data
 
-1. **Upload Schemas**: Import your source and target data schemas
-2. **Create Mappings**: Use the visual interface to map fields between systems
-3. **Configure Transformations**: Set up data transformation rules
-4. **Test Mappings**: Validate your configurations
-5. **Export**: Save your mapping configuration for deployment
+### Configuration
 
-## Deployment
-
-### Production Build
-
-1. Build the project:
-```sh
-npm run build
+Backend configuration via `backend/.env`:
+```env
+DATABASE_URL=postgresql://user:pass@localhost/dms
+ANTHROPIC_API_KEY=your_claude_api_key
+CORS_ORIGINS=http://localhost:5173
 ```
 
-2. The built files will be in the `dist` directory
+Frontend connects to backend at `VITE_API_URL` (default: `http://localhost:8000`)
 
-### Deployment Options
+## 🚢 Deployment
 
-- **Static Hosting**: Deploy the `dist` directory to services like Netlify, Vercel, or AWS S3
-- **Docker**: Containerize the application for deployment
-- **CDN**: Serve static files through a CDN for better performance
+### Docker (Recommended)
 
-## Security Considerations
+```bash
+docker-compose -f docker-compose.yml up -d
+```
 
-- Store sensitive configuration data securely
-- Use environment variables for API keys and credentials
-- Implement proper authentication for production deployments
-- Regularly update dependencies for security patches
+### Kubernetes
 
-## Contributing
+```bash
+# Build images
+docker build -t dms-backend backend/
+docker build -t dms-frontend .
 
-This is a private repository. All contributions must be approved by the repository owner.
+# Deploy with kubectl
+kubectl apply -f k8s/
+```
 
-## License
+### Cloud Providers
 
-**PRIVATE AND CONFIDENTIAL**
+- **Heroku**: `git push heroku main`
+- **AWS/EC2**: Use Docker image
+- **Digital Ocean**: One-click Docker app
+- **Render/Railway**: Connect GitHub repo
 
-This software is proprietary and confidential. All rights reserved.
+## 🔒 Security
 
-## Support
+- All data processing happens on your infrastructure (no cloud vendor lock-in)
+- Supports HIPAA compliance with proper configuration
+- Credential encryption for database connections
+- API key authentication for backend
+- CORS properly configured for frontend
 
-For support or questions regarding this private repository, please contact the repository owner directly.
+## 🤝 Contributing
+
+We welcome contributions! Please:
+
+1. Fork the repository
+2. Create feature branch (`git checkout -b feature/my-feature`)
+3. Commit changes (`git commit -am 'Add feature'`)
+4. Push branch (`git push origin feature/my-feature`)
+5. Open Pull Request
+
+### Development
+
+```bash
+# Set up development environment
+docker-compose up
+
+# Run tests
+cd backend && pytest
+cd frontend && npm test
+
+# Check code quality
+cd backend && black . && flake8 .
+cd frontend && npm run lint
+```
+
+## 📄 License
+
+This project is licensed under the **Apache License 2.0** - see [LICENSE](LICENSE) file for details.
+
+### Free to Use
+- ✅ Use commercially
+- ✅ Modify source code
+- ✅ Distribute
+- ✅ Private use
+- ✅ Patent use
+
+### Requirements
+- ⚠️ Include LICENSE
+- ⚠️ Document changes
+- ⚠️ No warranty
+
+## 🙋 Support
+
+- **GitHub Issues**: Report bugs and request features
+- **Discussions**: Ask questions and share ideas
+- **Discord**: Community support (coming soon)
+- **Documentation**: Read [backend/README.md](./backend/README.md) and inline code comments
+
+## 🎯 Roadmap
+
+### Phase 1 (MVP) - Complete ✅
+- [x] AI schema detection
+- [x] CSV & EDI connectors
+- [x] Execution engine
+- [x] Docker setup
+
+### Phase 2 (Coming Soon)
+- [ ] JSON connector
+- [ ] Database connections (PostgreSQL, MySQL)
+- [ ] REST API connector
+- [ ] Job scheduling
+- [ ] Web UI improvements
+
+### Phase 3
+- [ ] HL7v2 support
+- [ ] FHIR support
+- [ ] Multi-user teams
+- [ ] Audit logging
 
 ---
 
-**Last Updated**: December 2024
+**Built with ❤️ for the healthcare community**
+
+Last Updated: March 2025

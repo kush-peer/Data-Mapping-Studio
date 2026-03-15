@@ -1,0 +1,85 @@
+version: '3.8'
+
+services:
+  # PostgreSQL Database
+  postgres:
+    image: postgres:15-alpine
+    container_name: dms_postgres
+    environment:
+      POSTGRES_USER: dms_user
+      POSTGRES_PASSWORD: dms_password
+      POSTGRES_DB: dms_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U dms_user -d dms_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Redis (for future job queue/caching)
+  redis:
+    image: redis:7-alpine
+    container_name: dms_redis
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # FastAPI Backend
+  backend:
+    build:
+      context: .
+      dockerfile: ./backend/Dockerfile
+    container_name: dms_backend
+    command: python main.py
+    working_dir: /app/backend
+    environment:
+      DATABASE_URL: postgresql://dms_user:dms_password@postgres:5432/dms_db
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+      ENV: development
+      HOST: 0.0.0.0
+      PORT: 8000
+    ports:
+      - "8000:8000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    volumes:
+      - ./backend:/app/backend
+      - /tmp/dms_output:/tmp/dms_output
+    networks:
+      - dms_network
+
+  # React Frontend
+  frontend:
+    build:
+      context: .
+      dockerfile: ./frontend/Dockerfile
+    container_name: dms_frontend
+    command: npm run dev
+    environment:
+      VITE_API_URL: http://backend:8000
+    ports:
+      - "5173:5173"
+    depends_on:
+      - backend
+    volumes:
+      - ./src:/app/src
+      - ./public:/app/public
+    networks:
+      - dms_network
+
+volumes:
+  postgres_data:
+
+networks:
+  dms_network:
+    driver: bridge
