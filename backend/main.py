@@ -9,8 +9,9 @@ from dotenv import load_dotenv
 load_dotenv()
 
 # Import routes
-from app.api.routes import schemas, mappings, auth
+from app.api.routes import schemas, mappings, auth, jobs
 from app.database import init_db
+from app.queue.celery_app import celery_app
 
 # Lifespan context for FastAPI
 @asynccontextmanager
@@ -50,6 +51,7 @@ app.add_middleware(
 app.include_router(auth.router)
 app.include_router(schemas.router)
 app.include_router(mappings.router)
+app.include_router(jobs.router)
 
 
 @app.get("/")

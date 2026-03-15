@@ -58,6 +58,51 @@ services:
     networks:
       - dms_network
 
+  # Celery Worker (for async job execution)
+  celery_worker:
+    build:
+      context: .
+      dockerfile: ./backend/Dockerfile
+    container_name: dms_celery_worker
+    command: celery -A app.queue.celery_app worker --loglevel=info --concurrency=4
+    working_dir: /app/backend
+    environment:
+      DATABASE_URL: postgresql://dms_user:dms_password@postgres:5432/dms_db
+      CELERY_BROKER_URL: redis://redis:6379/0
+      CELERY_RESULT_BACKEND: redis://redis:6379/0
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+      ENV: development
+    depends_on:
+      - postgres
+      - redis
+      - backend
+    volumes:
+      - ./backend:/app/backend
+      - /tmp/dms_output:/tmp/dms_output
+    networks:
+      - dms_network
+
+  # Celery Beat (for scheduled jobs)
+  celery_beat:
+    build:
+      context: .
+      dockerfile: ./backend/Dockerfile
+    container_name: dms_celery_beat
+    command: celery -A app.queue.celery_app beat --loglevel=info --scheduler django_celery_beat.schedulers:DatabaseScheduler
+    working_dir: /app/backend
+    environment:
+      DATABASE_URL: postgresql://dms_user:dms_password@postgres:5432/dms_db
+      CELERY_BROKER_URL: redis://redis:6379/0
+      CELERY_RESULT_BACKEND: redis://redis:6379/0
+      ENV: development
+    depends_on:
+      - postgres
+      - redis
+    volumes:
+      - ./backend:/app/backend
+    networks:
+      - dms_network
+
   # React Frontend
   frontend:
     build:
