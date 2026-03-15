@@ -4,7 +4,7 @@ from typing import List
 import json
 from app.database import get_db
 from app.models import Schema, Project
-from app.connectors import CSVConnector, EDIConnector
+from app.connectors import CSVConnector, EDIConnector, JSONConnector, DatabaseConnector, RESTConnector
 from app.services.llm_service import LLMService
 
 router = APIRouter(prefix="/api/schemas", tags=["schemas"])
@@ -16,7 +16,7 @@ CONNECTOR_MAP = {
     "txt": CSVConnector,
     "edi": EDIConnector,
     "x12": EDIConnector,
-    "json": CSVConnector,
+    "json": JSONConnector,
 }
 
 

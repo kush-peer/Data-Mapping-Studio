@@ -231,6 +231,26 @@ class ApiClient {
   async removeTeamMember(teamId: string, userId: string) {
     return this.client.delete(`/api/teams/${teamId}/members/${userId}`);
   }
+
+  // ===== Connectors =====
+  async listAvailableConnectors() {
+    return this.client.get('/api/connectors/available');
+  }
+
+  async getSupportedFormats() {
+    return this.client.get('/api/connectors/supported');
+  }
+
+  async getHealthcareConnectors() {
+    return this.client.get('/api/connectors/healthcare-connectors');
+  }
+
+  async testConnectorConnection(connectorType: string, config: any) {
+    return this.client.post('/api/connectors/test-connection', {
+      connector_type: connectorType,
+      config,
+    });
+  }
 }
 
 export const api = new ApiClient();
