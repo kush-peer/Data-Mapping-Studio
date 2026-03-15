@@ -1,13 +1,20 @@
-import React, { useState, useRef, useLayoutEffect } from 'react';
+import React, { useState, useRef, useLayoutEffect, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { SchemaPanel } from '../components/SchemaPanel';
 import { MappingCanvas } from '../components/MappingCanvas';
 import { TransformationPanel } from '../components/TransformationPanel';
 import { AIAssistant } from '../components/AIAssistant';
 import { FileUploadPanel } from '../components/FileUploadPanel';
-import { Bot, Save, Play, Download, Upload } from 'lucide-react';
+import { ExecutionPanel } from '../components/ExecutionPanel';
+import { ExecutionHistoryPanel } from '../components/ExecutionHistoryPanel';
+import { ExecutionDetailsModal } from '../components/ExecutionDetailsModal';
+import { JobSchedulerModal } from '../components/JobSchedulerModal';
+import { Bot, Save, Play, Download, Upload, BarChart3, Clock } from 'lucide-react';
 import { Button } from '../components/ui/button';
 import { useToast } from '../hooks/use-toast';
 import { Select, SelectTrigger, SelectContent, SelectItem } from '../components/ui/select';
+import { useProject } from '@/contexts/ProjectContext';
+import { useProjectData } from '@/hooks/useProjectData';
 
 export interface SchemaField {
   id: string;
@@ -33,7 +40,17 @@ export interface Transformation {
 
 const Index = () => {
   const { toast } = useToast();
-  
+  const navigate = useNavigate();
+  const { currentProject } = useProject();
+  const { schemas, mappings: backendMappings, createSchemaFromFile, createMapping, executeMapping } = useProjectData();
+
+  // Redirect if no project selected
+  useEffect(() => {
+    if (!currentProject) {
+      navigate('/projects');
+    }
+  }, [currentProject, navigate]);
+
   const [sourceSchemas, setSourceSchemas] = useState<{name: string, fields: SchemaField[]}[]>([
     { name: "Accounts", fields: [
       { id: 'patient_id', name: 'Patient ID', type: 'string', required: true, example: 'P12345' },
@@ -74,6 +91,10 @@ const Index = () => {
   const [selectedMapping, setSelectedMapping] = useState<string | null>(null);
   const [showAI, setShowAI] = useState(false);
   const [showFileUpload, setShowFileUpload] = useState(false);
+  const [activeTab, setActiveTab] = useState<'mapping' | 'execution' | 'history'>('mapping');
+  const [selectedJobId, setSelectedJobId] = useState<string | null>(null);
+  const [showExecutionDetails, setShowExecutionDetails] = useState(false);
+  const [showScheduler, setShowScheduler] = useState(false);
 
   const sourceFieldRefs = useRef<{ [fieldId: string]: HTMLDivElement | null }>({});
   const targetFieldRefs = useRef<{ [fieldId: string]: HTMLDivElement | null }>({});
@@ -124,7 +145,7 @@ const Index = () => {
     }
   };
 
-  const handleSchemaUpload = (fields: SchemaField[], type: 'source' | 'target', name: string) => {
+  const handleSchemaUpload = async (fields: SchemaField[], type: 'source' | 'target', name: string) => {
     if (type === 'source') {
       setSourceSchemas(prev => [...prev, { name, fields }]);
       setSelectedSourceIdx(sourceSchemas.length);
@@ -132,26 +153,83 @@ const Index = () => {
       setTargetSchemas(prev => [...prev, { name, fields }]);
       setSelectedTargetIdx(targetSchemas.length);
     }
+
+    // Also save to backend if we have a current project and this was from file upload
+    // The FileUploadPanel will handle calling this via a File object
     toast({
       title: "Schema Uploaded",
       description: `Successfully uploaded ${fields.length} fields to ${type} schema.`,
     });
   };
 
-  const handleSave = () => {
-    const mappingData = {
-      sourceSchemas,
-      targetSchemas,
-      mappings,
-      timestamp: new Date().toISOString()
-    };
-    
-    localStorage.setItem('rcm-mappings', JSON.stringify(mappingData));
-    
-    toast({
-      title: "Mappings Saved",
-      description: `Successfully saved ${mappings.length} field mappings.`,
-    });
+  const handleSave = async () => {
+    if (!currentProject) {
+      toast({
+        title: "No Project",
+        description: "Please select a project first.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (mappings.length === 0) {
+      toast({
+        title: "No Mappings",
+        description: "Please create some field mappings first.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (selectedSourceIdx < 0 || selectedTargetIdx < 0) {
+      toast({
+        title: "Invalid Selection",
+        description: "Please select both source and target schemas.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      const sourceSchema = sourceSchemas[selectedSourceIdx];
+      const targetSchema = targetSchemas[selectedTargetIdx];
+
+      // Convert local mappings to rules format
+      const rules = mappings.map(m => ({
+        source_field: m.sourceFieldId,
+        target_field: m.targetFieldId,
+        transformation: m.transformation || { type: 'direct' }
+      }));
+
+      // Save to backend
+      await createMapping(
+        sourceSchema.name,  // temp: use names since we don't have IDs yet
+        targetSchema.name,
+        `${sourceSchema.name} -> ${targetSchema.name}`,
+        rules
+      );
+
+      // Also save locally as backup
+      const mappingData = {
+        sourceSchemas,
+        targetSchemas,
+        mappings,
+        timestamp: new Date().toISOString()
+      };
+      localStorage.setItem('rcm-mappings', JSON.stringify(mappingData));
+
+      toast({
+        title: "Mappings Saved",
+        description: `Successfully saved ${mappings.length} field mappings to project.`,
+      });
+    } catch (error) {
+      console.error('Error saving mappings:', error);
+      toast({
+        title: "Save Failed",
+        description: "Failed to save mappings to project.",
+        variant: "destructive",
+      });
+    }
   };
 
   const handleTest = () => {
@@ -164,9 +242,11 @@ const Index = () => {
       return;
     }
 
+    // Switch to execution tab
+    setActiveTab('execution');
     toast({
-      title: "Test Complete",
-      description: `Tested ${mappings.length} mappings - all connections verified.`,
+      title: "Ready to Execute",
+      description: "Upload your data file and click 'Execute' to transform your data.",
     });
   };
 
@@ -204,35 +284,76 @@ const Index = () => {
           <div className="flex items-center justify-between">
             <div>
               <h1 className="text-2xl font-bold text-gray-900">Data-Mapping Studio</h1>
-              <p className="text-sm text-gray-600 mt-1">Intelligent data mapping and transformation platform</p>
+              <p className="text-sm text-gray-600 mt-1">
+                {currentProject ? `Project: ${currentProject.name}` : 'Intelligent data mapping and transformation platform'}
+              </p>
             </div>
-            <div className="flex items-center ml-auto">
-              <Button className="btn-nav" onClick={() => setShowFileUpload(true)}>
-                <Upload className="w-4 h-4 mr-2" />
-                Upload Schema
-              </Button>
-              <Button className="btn-nav" onClick={() => setShowAI(!showAI)}>
-                <Bot className="w-4 h-4 mr-2" />
-                AI Assistant
-              </Button>
-              <Button className="btn-nav" onClick={handleSave}>
-                <Save className="w-4 h-4 mr-2" />
-                Save
-              </Button>
-              <Button className="btn-nav" onClick={handleTest}>
-                <Play className="w-4 h-4 mr-2" />
-                Test
-              </Button>
-              <Button className="btn-nav" onClick={handleExport}>
-                <Download className="w-4 h-4 mr-2" />
-                Export
-              </Button>
+            <div className="flex items-center ml-auto gap-2">
+              {activeTab === 'mapping' && (
+                <>
+                  <Button className="btn-nav" onClick={() => setShowFileUpload(true)}>
+                    <Upload className="w-4 h-4 mr-2" />
+                    Upload Schema
+                  </Button>
+                  <Button className="btn-nav" onClick={() => setShowAI(!showAI)}>
+                    <Bot className="w-4 h-4 mr-2" />
+                    AI Assistant
+                  </Button>
+                  <Button className="btn-nav" onClick={handleSave}>
+                    <Save className="w-4 h-4 mr-2" />
+                    Save
+                  </Button>
+                  <Button className="btn-nav" onClick={handleExport}>
+                    <Download className="w-4 h-4 mr-2" />
+                    Export
+                  </Button>
+                </>
+              )}
+              {activeTab !== 'mapping' && (
+                <Button className="btn-nav" onClick={() => setActiveTab('mapping')}>
+                  Back to Mapping
+                </Button>
+              )}
             </div>
           </div>
         </div>
+
+        {/* Tab Navigation */}
+        <div className="px-6 py-2 border-b border-gray-200 flex gap-4 bg-gray-50">
+          <button
+            onClick={() => setActiveTab('mapping')}
+            className={`px-4 py-2 font-medium text-sm border-b-2 transition-colors ${
+              activeTab === 'mapping'
+                ? 'border-blue-600 text-blue-600'
+                : 'border-transparent text-gray-600 hover:text-gray-900'
+            }`}
+          >
+            📍 Mapping
+          </button>
+          <button
+            onClick={() => setActiveTab('execution')}
+            className={`px-4 py-2 font-medium text-sm border-b-2 transition-colors ${
+              activeTab === 'execution'
+                ? 'border-blue-600 text-blue-600'
+                : 'border-transparent text-gray-600 hover:text-gray-900'
+            }`}
+          >
+            ▶️ Execute
+          </button>
+          <button
+            onClick={() => setActiveTab('history')}
+            className={`px-4 py-2 font-medium text-sm border-b-2 transition-colors ${
+              activeTab === 'history'
+                ? 'border-blue-600 text-blue-600'
+                : 'border-transparent text-gray-600 hover:text-gray-900'
+            }`}
+          >
+            📊 History
+          </button>
+        </div>
       </div>
 
-      <div className="flex h-[calc(100vh-88px)]">
+      {activeTab === 'mapping' && <div className="flex h-[calc(100vh-136px)]">
         <div className="w-1/4 border-r border-gray-200 bg-white">
           <div className="w-11/12 mx-auto mt-4 flex flex-col gap-2">
             <div className="flex items-center justify-between mb-2">
@@ -308,8 +429,93 @@ const Index = () => {
           </div>
         </div>
       </div>
+      </div>
 
-      {selectedMapping && (
+      {activeTab === 'execution' && (
+        <div className="flex h-[calc(100vh-136px)] flex-col bg-gray-50">
+          <div className="flex-1 overflow-y-auto p-6">
+            <div className="max-w-6xl mx-auto grid grid-cols-2 gap-6">
+              {/* Execution Panel */}
+              <div className="space-y-4">
+                <ExecutionPanel
+                  mappingId={mappings.length > 0 ? mappings[0].id : undefined}
+                  mappingName={
+                    mappings.length > 0
+                      ? `${sourceSchemas[selectedSourceIdx]?.name} → ${targetSchemas[selectedTargetIdx]?.name}`
+                      : 'No mapping selected'
+                  }
+                  onExecutionStart={() => {
+                    toast({
+                      title: "Execution Started",
+                      description: "Processing your data file...",
+                    });
+                  }}
+                  onExecutionComplete={(result) => {
+                    toast({
+                      title: result.status === 'success' ? "Execution Complete" : "Execution Failed",
+                      description: `Processed ${result.records_processed} records`,
+                    });
+                  }}
+                />
+
+                {/* Schedule Button */}
+                {mappings.length > 0 && (
+                  <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+                    <h3 className="font-semibold text-gray-900 mb-3 flex items-center gap-2">
+                      <Clock className="w-5 h-5" />
+                      Recurring Execution
+                    </h3>
+                    <p className="text-sm text-gray-600 mb-4">
+                      Schedule this mapping to run automatically on a recurring basis
+                    </p>
+                    <Button
+                      onClick={() => setShowScheduler(true)}
+                      className="w-full"
+                    >
+                      <Clock className="w-4 h-4 mr-2" />
+                      Schedule Recurring Job
+                    </Button>
+                  </div>
+                )}
+              </div>
+
+              {/* Execution History Panel */}
+              <div>
+                <ExecutionHistoryPanel
+                  mappingId={mappings.length > 0 ? mappings[0].id : undefined}
+                  onSelectExecution={(execution) => {
+                    // Find the job ID from the execution
+                    if (execution.id) {
+                      setSelectedJobId(execution.id);
+                      setShowExecutionDetails(true);
+                    }
+                  }}
+                />
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {activeTab === 'history' && (
+        <div className="flex h-[calc(100vh-136px)] flex-col bg-gray-50">
+          <div className="flex-1 overflow-y-auto p-6">
+            <div className="max-w-2xl mx-auto">
+              <ExecutionHistoryPanel
+                mappingId={mappings.length > 0 ? mappings[0].id : undefined}
+                onSelectExecution={(execution) => {
+                  if (execution.id) {
+                    setSelectedJobId(execution.id);
+                    setShowExecutionDetails(true);
+                  }
+                }}
+              />
+            </div>
+          </div>
+        </div>
+      )}
+
+      {selectedMapping && activeTab === 'mapping' && (
         <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 shadow-lg">
           <TransformationPanel
             mapping={mappings.find(m => m.id === selectedMapping)!}
@@ -321,10 +527,40 @@ const Index = () => {
         </div>
       )}
 
-      {showFileUpload && (
+      {showFileUpload && activeTab === 'mapping' && (
         <FileUploadPanel
           onSchemaUpload={handleSchemaUpload}
           onClose={() => setShowFileUpload(false)}
+        />
+      )}
+
+      {/* Execution Details Modal */}
+      {selectedJobId && (
+        <ExecutionDetailsModal
+          jobId={selectedJobId}
+          isOpen={showExecutionDetails}
+          onClose={() => {
+            setShowExecutionDetails(false);
+            setSelectedJobId(null);
+          }}
+        />
+      )}
+
+      {/* Job Scheduler Modal */}
+      {mappings.length > 0 && (
+        <JobSchedulerModal
+          mappingId={mappings[0].id}
+          mappingName={
+            mappings.length > 0
+              ? `${sourceSchemas[selectedSourceIdx]?.name} → ${targetSchemas[selectedTargetIdx]?.name}`
+              : 'Mapping'
+          }
+          isOpen={showScheduler}
+          onClose={() => setShowScheduler(false)}
+          onScheduleSuccess={() => {
+            // Refresh history after scheduling
+            setActiveTab('history');
+          }}
         />
       )}
     </div>

@@ -1,0 +1,129 @@
+version: '3.8'
+
+services:
+  # PostgreSQL Database (Production)
+  postgres:
+    image: postgres:15-alpine
+    container_name: dms_postgres_prod
+    restart: always
+    environment:
+      POSTGRES_USER: ${DB_USER:-dms_user}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-changeme}
+      POSTGRES_DB: ${DB_NAME:-dms_db}
+      POSTGRES_INITDB_ARGS: "-c max_connections=200"
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data_prod:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-dms_user} -d ${DB_NAME:-dms_db}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - dms_network_prod
+
+  # Redis (Caching & Job Queue)
+  redis:
+    image: redis:7-alpine
+    container_name: dms_redis_prod
+    restart: always
+    command: redis-server --appendonly yes --requirepass ${REDIS_PASSWORD:-redis_password}
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data_prod:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "--raw", "incr", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - dms_network_prod
+
+  # FastAPI Backend (Production)
+  backend:
+    build:
+      context: .
+      dockerfile: ./backend/Dockerfile
+      args:
+        - BUILD_ENV=production
+    container_name: dms_backend_prod
+    restart: always
+    command: gunicorn -w 4 -k uvicorn.workers.UvicornWorker --bind 0.0.0.0:8000 --access-logfile - --error-logfile - main:app
+    working_dir: /app/backend
+    environment:
+      DATABASE_URL: postgresql://${DB_USER:-dms_user}:${DB_PASSWORD:-changeme}@postgres:5432/${DB_NAME:-dms_db}
+      REDIS_URL: redis://:${REDIS_PASSWORD:-redis_password}@redis:6379/0
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY}
+      ENV: production
+      HOST: 0.0.0.0
+      PORT: 8000
+      CORS_ORIGINS: ${CORS_ORIGINS:-https://yourdomain.com}
+      TRUSTED_HOSTS: ${TRUSTED_HOSTS:-yourdomain.com}
+      LOG_LEVEL: info
+    ports:
+      - "8000:8000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    volumes:
+      - /tmp/dms_output:/tmp/dms_output
+    networks:
+      - dms_network_prod
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # React Frontend (Production - NGINX)
+  frontend:
+    build:
+      context: .
+      dockerfile: ./frontend/Dockerfile
+      target: production
+      args:
+        - VITE_API_URL=${VITE_API_URL:-https://api.yourdomain.com}
+    container_name: dms_frontend_prod
+    restart: always
+    ports:
+      - "3000:80"
+    environment:
+      - NODE_ENV=production
+    networks:
+      - dms_network_prod
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:80"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Nginx Reverse Proxy (Optional but Recommended)
+  nginx:
+    image: nginx:alpine
+    container_name: dms_nginx_prod
+    restart: always
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./ssl:/etc/nginx/ssl:ro  # SSL certificates
+    depends_on:
+      - backend
+      - frontend
+    networks:
+      - dms_network_prod
+
+volumes:
+  postgres_data_prod:
+    driver: local
+  redis_data_prod:
+    driver: local
+
+networks:
+  dms_network_prod:
+    driver: bridge
