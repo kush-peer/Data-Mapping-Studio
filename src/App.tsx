@@ -12,6 +12,7 @@ import NotFound from "./pages/NotFound";
 import Configuration from "./pages/Configuration";
 import Login from "./pages/Login";
 import Projects from "./pages/Projects";
+import TeamManagement from "./pages/TeamManagement";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
 
@@ -37,6 +38,9 @@ const AppContent: React.FC = () => {
               <Link to="/">
                 <Button className="btn-nav">Mapping</Button>
               </Link>
+              <Link to="/team">
+                <Button className="btn-nav">Team</Button>
+              </Link>
               <Link to="/configuration">
                 <Button className="btn-nav">Configuration</Button>
               </Link>
@@ -48,6 +52,7 @@ const AppContent: React.FC = () => {
         <Route path="/login" element={<Login />} />
         <Route path="/projects" element={<ProtectedRoute><Projects /></ProtectedRoute>} />
         <Route path="/" element={<ProtectedRoute><Index /></ProtectedRoute>} />
+        <Route path="/team" element={<ProtectedRoute><TeamManagement /></ProtectedRoute>} />
         <Route path="/configuration" element={<ProtectedRoute><Configuration /></ProtectedRoute>} />
         <Route path="*" element={<NotFound />} />
       </Routes>

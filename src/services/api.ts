@@ -202,6 +202,35 @@ class ApiClient {
   async listJobsForMapping(mappingId: string) {
     return this.client.get(`/api/jobs/mapping/${mappingId}`);
   }
+
+  // ===== Teams =====
+  async getMyTeam() {
+    return this.client.get('/api/teams/my-team');
+  }
+
+  async createTeam(data: { name: string }) {
+    return this.client.post('/api/teams/', data);
+  }
+
+  async getTeam(teamId: string) {
+    return this.client.get(`/api/teams/${teamId}`);
+  }
+
+  async getTeamMembers(teamId: string) {
+    return this.client.get(`/api/teams/${teamId}/members`);
+  }
+
+  async addTeamMember(teamId: string, data: { email: string; role?: string }) {
+    return this.client.post(`/api/teams/${teamId}/members`, data);
+  }
+
+  async updateTeamMemberRole(teamId: string, userId: string, data: { role: string }) {
+    return this.client.put(`/api/teams/${teamId}/members/${userId}`, data);
+  }
+
+  async removeTeamMember(teamId: string, userId: string) {
+    return this.client.delete(`/api/teams/${teamId}/members/${userId}`);
+  }
 }
 
 export const api = new ApiClient();
