@@ -6,6 +6,7 @@ export interface User {
   id: string;
   email: string;
   api_key: string;
+  role?: string;
 }
 
 interface AuthContextType {
@@ -67,6 +68,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         id: response.user_id,
         email: response.email,
         api_key: response.api_key,
+        role: response.role,
       };
 
       // Store in localStorage

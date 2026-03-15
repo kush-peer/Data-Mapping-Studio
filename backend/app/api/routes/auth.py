@@ -17,12 +17,14 @@ class GenerateKeyResponse(BaseModel):
     api_key: str
     email: str
     user_id: str
+    role: str
 
 
 class ValidateKeyResponse(BaseModel):
     valid: bool
     email: str
     user_id: str
+    role: str
 
 
 @router.post("/generate-key", response_model=GenerateKeyResponse)
@@ -52,7 +54,8 @@ async def generate_api_key(request: GenerateKeyRequest, db: Session = Depends(ge
         return {
             "api_key": api_key,
             "email": user.email,
-            "user_id": user.id
+            "user_id": user.id,
+            "role": user.role.value
         }
 
     except Exception as e:
@@ -88,7 +91,8 @@ async def validate_api_key(
         return {
             "valid": True,
             "email": user.email,
-            "user_id": user.id
+            "user_id": user.id,
+            "role": user.role.value
         }
 
     except HTTPException:
