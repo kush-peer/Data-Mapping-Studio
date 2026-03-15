@@ -5,7 +5,10 @@ import { MappingCanvas } from '../components/MappingCanvas';
 import { TransformationPanel } from '../components/TransformationPanel';
 import { AIAssistant } from '../components/AIAssistant';
 import { FileUploadPanel } from '../components/FileUploadPanel';
-import { Bot, Save, Play, Download, Upload } from 'lucide-react';
+import { ExecutionPanel } from '../components/ExecutionPanel';
+import { ExecutionHistoryPanel } from '../components/ExecutionHistoryPanel';
+import { ExecutionDetailsModal } from '../components/ExecutionDetailsModal';
+import { Bot, Save, Play, Download, Upload, BarChart3 } from 'lucide-react';
 import { Button } from '../components/ui/button';
 import { useToast } from '../hooks/use-toast';
 import { Select, SelectTrigger, SelectContent, SelectItem } from '../components/ui/select';
@@ -87,6 +90,9 @@ const Index = () => {
   const [selectedMapping, setSelectedMapping] = useState<string | null>(null);
   const [showAI, setShowAI] = useState(false);
   const [showFileUpload, setShowFileUpload] = useState(false);
+  const [activeTab, setActiveTab] = useState<'mapping' | 'execution' | 'history'>('mapping');
+  const [selectedJobId, setSelectedJobId] = useState<string | null>(null);
+  const [showExecutionDetails, setShowExecutionDetails] = useState(false);
 
   const sourceFieldRefs = useRef<{ [fieldId: string]: HTMLDivElement | null }>({});
   const targetFieldRefs = useRef<{ [fieldId: string]: HTMLDivElement | null }>({});
@@ -234,10 +240,11 @@ const Index = () => {
       return;
     }
 
-    // Show a message that user needs to upload data first
+    // Switch to execution tab
+    setActiveTab('execution');
     toast({
-      title: "Data Execution",
-      description: "To execute mappings, upload a data file using 'Upload Schema' button with data type, then click 'Execute'.",
+      title: "Ready to Execute",
+      description: "Upload your data file and click 'Execute' to transform your data.",
     });
   };
 
@@ -279,33 +286,72 @@ const Index = () => {
                 {currentProject ? `Project: ${currentProject.name}` : 'Intelligent data mapping and transformation platform'}
               </p>
             </div>
-            <div className="flex items-center ml-auto">
-              <Button className="btn-nav" onClick={() => setShowFileUpload(true)}>
-                <Upload className="w-4 h-4 mr-2" />
-                Upload Schema
-              </Button>
-              <Button className="btn-nav" onClick={() => setShowAI(!showAI)}>
-                <Bot className="w-4 h-4 mr-2" />
-                AI Assistant
-              </Button>
-              <Button className="btn-nav" onClick={handleSave}>
-                <Save className="w-4 h-4 mr-2" />
-                Save
-              </Button>
-              <Button className="btn-nav" onClick={handleTest}>
-                <Play className="w-4 h-4 mr-2" />
-                Test
-              </Button>
-              <Button className="btn-nav" onClick={handleExport}>
-                <Download className="w-4 h-4 mr-2" />
-                Export
-              </Button>
+            <div className="flex items-center ml-auto gap-2">
+              {activeTab === 'mapping' && (
+                <>
+                  <Button className="btn-nav" onClick={() => setShowFileUpload(true)}>
+                    <Upload className="w-4 h-4 mr-2" />
+                    Upload Schema
+                  </Button>
+                  <Button className="btn-nav" onClick={() => setShowAI(!showAI)}>
+                    <Bot className="w-4 h-4 mr-2" />
+                    AI Assistant
+                  </Button>
+                  <Button className="btn-nav" onClick={handleSave}>
+                    <Save className="w-4 h-4 mr-2" />
+                    Save
+                  </Button>
+                  <Button className="btn-nav" onClick={handleExport}>
+                    <Download className="w-4 h-4 mr-2" />
+                    Export
+                  </Button>
+                </>
+              )}
+              {activeTab !== 'mapping' && (
+                <Button className="btn-nav" onClick={() => setActiveTab('mapping')}>
+                  Back to Mapping
+                </Button>
+              )}
             </div>
           </div>
         </div>
+
+        {/* Tab Navigation */}
+        <div className="px-6 py-2 border-b border-gray-200 flex gap-4 bg-gray-50">
+          <button
+            onClick={() => setActiveTab('mapping')}
+            className={`px-4 py-2 font-medium text-sm border-b-2 transition-colors ${
+              activeTab === 'mapping'
+                ? 'border-blue-600 text-blue-600'
+                : 'border-transparent text-gray-600 hover:text-gray-900'
+            }`}
+          >
+            📍 Mapping
+          </button>
+          <button
+            onClick={() => setActiveTab('execution')}
+            className={`px-4 py-2 font-medium text-sm border-b-2 transition-colors ${
+              activeTab === 'execution'
+                ? 'border-blue-600 text-blue-600'
+                : 'border-transparent text-gray-600 hover:text-gray-900'
+            }`}
+          >
+            ▶️ Execute
+          </button>
+          <button
+            onClick={() => setActiveTab('history')}
+            className={`px-4 py-2 font-medium text-sm border-b-2 transition-colors ${
+              activeTab === 'history'
+                ? 'border-blue-600 text-blue-600'
+                : 'border-transparent text-gray-600 hover:text-gray-900'
+            }`}
+          >
+            📊 History
+          </button>
+        </div>
       </div>
 
-      <div className="flex h-[calc(100vh-88px)]">
+      {activeTab === 'mapping' && <div className="flex h-[calc(100vh-136px)]">
         <div className="w-1/4 border-r border-gray-200 bg-white">
           <div className="w-11/12 mx-auto mt-4 flex flex-col gap-2">
             <div className="flex items-center justify-between mb-2">
@@ -381,8 +427,73 @@ const Index = () => {
           </div>
         </div>
       </div>
+      </div>
 
-      {selectedMapping && (
+      {activeTab === 'execution' && (
+        <div className="flex h-[calc(100vh-136px)] flex-col bg-gray-50">
+          <div className="flex-1 overflow-y-auto p-6">
+            <div className="max-w-6xl mx-auto grid grid-cols-2 gap-6">
+              {/* Execution Panel */}
+              <div>
+                <ExecutionPanel
+                  mappingId={mappings.length > 0 ? mappings[0].id : undefined}
+                  mappingName={
+                    mappings.length > 0
+                      ? `${sourceSchemas[selectedSourceIdx]?.name} → ${targetSchemas[selectedTargetIdx]?.name}`
+                      : 'No mapping selected'
+                  }
+                  onExecutionStart={() => {
+                    toast({
+                      title: "Execution Started",
+                      description: "Processing your data file...",
+                    });
+                  }}
+                  onExecutionComplete={(result) => {
+                    toast({
+                      title: result.status === 'success' ? "Execution Complete" : "Execution Failed",
+                      description: `Processed ${result.records_processed} records`,
+                    });
+                  }}
+                />
+              </div>
+
+              {/* Execution History Panel */}
+              <div>
+                <ExecutionHistoryPanel
+                  mappingId={mappings.length > 0 ? mappings[0].id : undefined}
+                  onSelectExecution={(execution) => {
+                    // Find the job ID from the execution
+                    if (execution.id) {
+                      setSelectedJobId(execution.id);
+                      setShowExecutionDetails(true);
+                    }
+                  }}
+                />
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {activeTab === 'history' && (
+        <div className="flex h-[calc(100vh-136px)] flex-col bg-gray-50">
+          <div className="flex-1 overflow-y-auto p-6">
+            <div className="max-w-2xl mx-auto">
+              <ExecutionHistoryPanel
+                mappingId={mappings.length > 0 ? mappings[0].id : undefined}
+                onSelectExecution={(execution) => {
+                  if (execution.id) {
+                    setSelectedJobId(execution.id);
+                    setShowExecutionDetails(true);
+                  }
+                }}
+              />
+            </div>
+          </div>
+        </div>
+      )}
+
+      {selectedMapping && activeTab === 'mapping' && (
         <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 shadow-lg">
           <TransformationPanel
             mapping={mappings.find(m => m.id === selectedMapping)!}
@@ -394,10 +505,22 @@ const Index = () => {
         </div>
       )}
 
-      {showFileUpload && (
+      {showFileUpload && activeTab === 'mapping' && (
         <FileUploadPanel
           onSchemaUpload={handleSchemaUpload}
           onClose={() => setShowFileUpload(false)}
+        />
+      )}
+
+      {/* Execution Details Modal */}
+      {selectedJobId && (
+        <ExecutionDetailsModal
+          jobId={selectedJobId}
+          isOpen={showExecutionDetails}
+          onClose={() => {
+            setShowExecutionDetails(false);
+            setSelectedJobId(null);
+          }}
         />
       )}
     </div>
