@@ -9,7 +9,7 @@ from dotenv import load_dotenv
 load_dotenv()
 
 # Import routes
-from app.api.routes import schemas, mappings
+from app.api.routes import schemas, mappings, auth
 from app.database import init_db
 
 # Lifespan context for FastAPI
@@ -47,6 +47,7 @@ app.add_middleware(
 )
 
 # Include routes
+app.include_router(auth.router)
 app.include_router(schemas.router)
 app.include_router(mappings.router)
 
