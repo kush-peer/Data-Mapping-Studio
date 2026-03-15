@@ -9,7 +9,7 @@ from dotenv import load_dotenv
 load_dotenv()
 
 # Import routes
-from app.api.routes import schemas, mappings, auth, jobs
+from app.api.routes import schemas, mappings, auth, jobs, projects
 from app.database import init_db
 from app.queue.celery_app import celery_app
 
@@ -49,6 +49,7 @@ app.add_middleware(
 
 # Include routes
 app.include_router(auth.router)
+app.include_router(projects.router)
 app.include_router(schemas.router)
 app.include_router(mappings.router)
 app.include_router(jobs.router)

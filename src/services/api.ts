@@ -4,6 +4,7 @@ const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
 
 class ApiClient {
   client: AxiosInstance;
+  private authToken: string | null = null;
 
   constructor() {
     this.client = axios.create({
@@ -15,25 +16,29 @@ class ApiClient {
 
     // Add auth token to requests if available
     this.client.interceptors.request.use((config) => {
-      const apiKey = localStorage.getItem('api_key');
-      if (apiKey) {
-        config.headers.Authorization = `Bearer ${apiKey}`;
+      if (this.authToken) {
+        config.headers.Authorization = `Bearer ${this.authToken}`;
       }
       return config;
     });
 
     // Handle errors
     this.client.interceptors.response.use(
-      (response) => response,
+      (response) => response.data,
       (error) => {
         if (error.response?.status === 401) {
           // Clear stored credentials on 401
-          localStorage.removeItem('api_key');
-          localStorage.removeItem('user_id');
+          this.authToken = null;
+          localStorage.removeItem('dms_api_token');
+          localStorage.removeItem('dms_user');
         }
-        return Promise.reject(error);
+        throw error.response?.data || error;
       }
     );
+  }
+
+  setAuthToken(token: string | null) {
+    this.authToken = token;
   }
 
   // Health check
@@ -41,10 +46,52 @@ class ApiClient {
     return this.client.get('/health');
   }
 
-  // Schemas
-  async detectSchema(file: File) {
+  // ===== Authentication =====
+  async generateApiKey(email: string) {
+    return this.client.post('/api/auth/generate-key', { email });
+  }
+
+  async validateApiKey(token: string) {
+    try {
+      const response = await this.client.get('/api/auth/validate', {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+      return response;
+    } catch (error) {
+      return null;
+    }
+  }
+
+  // ===== Projects =====
+  async createProject(data: { name: string; description?: string; team_id?: string }) {
+    return this.client.post('/api/projects/', data);
+  }
+
+  async listProjects() {
+    return this.client.get('/api/projects/');
+  }
+
+  async getProject(projectId: string) {
+    return this.client.get(`/api/projects/${projectId}`);
+  }
+
+  async updateProject(projectId: string, data: { name?: string; description?: string }) {
+    return this.client.put(`/api/projects/${projectId}`, data);
+  }
+
+  async deleteProject(projectId: string) {
+    return this.client.delete(`/api/projects/${projectId}`);
+  }
+
+  // ===== Schemas =====
+  async detectSchema(file: File, projectId?: string) {
     const formData = new FormData();
     formData.append('file', file);
+    if (projectId) {
+      formData.append('project_id', projectId);
+    }
 
     return this.client.post('/api/schemas/detect', formData, {
       headers: {
@@ -70,7 +117,7 @@ class ApiClient {
     return this.client.get(`/api/schemas/project/${projectId}`);
   }
 
-  // Mappings
+  // ===== Mappings =====
   async createMapping(
     projectId: string,
     sourceSchemaId: string,
@@ -96,7 +143,7 @@ class ApiClient {
   }
 
   async suggestMappings(mappingId: string) {
-    return this.client.post(`/api/mappings/${mappingId}/suggest`);
+    return this.client.post(`/api/mappings/${mappingId}/suggest`, {});
   }
 
   async getSampleOutput(mappingId: string, sourceFile: File, sampleSize: number = 10) {
@@ -122,14 +169,41 @@ class ApiClient {
     });
   }
 
-  // Authentication
-  async generateApiKey(email: string) {
-    return this.client.post('/api/auth/generate-key', { email });
+  // ===== Jobs =====
+  async executeMappingNow(mappingId: string, sourceFile: File) {
+    const formData = new FormData();
+    formData.append('source_file', sourceFile);
+
+    return this.client.post(`/api/jobs/${mappingId}/execute-now`, formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
   }
 
-  async validateApiKey() {
-    return this.client.get('/api/auth/validate');
+  async scheduleMapping(mappingId: string, scheduleCron: string) {
+    return this.client.post(`/api/jobs/${mappingId}/schedule`, {
+      schedule_cron: scheduleCron,
+    });
+  }
+
+  async getJobStatus(jobId: string) {
+    return this.client.get(`/api/jobs/${jobId}/status`);
+  }
+
+  async getJobLogs(jobId: string) {
+    return this.client.get(`/api/jobs/${jobId}/logs`);
+  }
+
+  async cancelJob(jobId: string) {
+    return this.client.post(`/api/jobs/${jobId}/cancel`, {});
+  }
+
+  async listJobsForMapping(mappingId: string) {
+    return this.client.get(`/api/jobs/mapping/${mappingId}`);
   }
 }
 
-export default new ApiClient();
+export const api = new ApiClient();
+
+export default api;
