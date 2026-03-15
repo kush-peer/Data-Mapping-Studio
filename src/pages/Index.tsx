@@ -8,7 +8,8 @@ import { FileUploadPanel } from '../components/FileUploadPanel';
 import { ExecutionPanel } from '../components/ExecutionPanel';
 import { ExecutionHistoryPanel } from '../components/ExecutionHistoryPanel';
 import { ExecutionDetailsModal } from '../components/ExecutionDetailsModal';
-import { Bot, Save, Play, Download, Upload, BarChart3 } from 'lucide-react';
+import { JobSchedulerModal } from '../components/JobSchedulerModal';
+import { Bot, Save, Play, Download, Upload, BarChart3, Clock } from 'lucide-react';
 import { Button } from '../components/ui/button';
 import { useToast } from '../hooks/use-toast';
 import { Select, SelectTrigger, SelectContent, SelectItem } from '../components/ui/select';
@@ -93,6 +94,7 @@ const Index = () => {
   const [activeTab, setActiveTab] = useState<'mapping' | 'execution' | 'history'>('mapping');
   const [selectedJobId, setSelectedJobId] = useState<string | null>(null);
   const [showExecutionDetails, setShowExecutionDetails] = useState(false);
+  const [showScheduler, setShowScheduler] = useState(false);
 
   const sourceFieldRefs = useRef<{ [fieldId: string]: HTMLDivElement | null }>({});
   const targetFieldRefs = useRef<{ [fieldId: string]: HTMLDivElement | null }>({});
@@ -434,7 +436,7 @@ const Index = () => {
           <div className="flex-1 overflow-y-auto p-6">
             <div className="max-w-6xl mx-auto grid grid-cols-2 gap-6">
               {/* Execution Panel */}
-              <div>
+              <div className="space-y-4">
                 <ExecutionPanel
                   mappingId={mappings.length > 0 ? mappings[0].id : undefined}
                   mappingName={
@@ -455,6 +457,26 @@ const Index = () => {
                     });
                   }}
                 />
+
+                {/* Schedule Button */}
+                {mappings.length > 0 && (
+                  <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+                    <h3 className="font-semibold text-gray-900 mb-3 flex items-center gap-2">
+                      <Clock className="w-5 h-5" />
+                      Recurring Execution
+                    </h3>
+                    <p className="text-sm text-gray-600 mb-4">
+                      Schedule this mapping to run automatically on a recurring basis
+                    </p>
+                    <Button
+                      onClick={() => setShowScheduler(true)}
+                      className="w-full"
+                    >
+                      <Clock className="w-4 h-4 mr-2" />
+                      Schedule Recurring Job
+                    </Button>
+                  </div>
+                )}
               </div>
 
               {/* Execution History Panel */}
@@ -520,6 +542,24 @@ const Index = () => {
           onClose={() => {
             setShowExecutionDetails(false);
             setSelectedJobId(null);
+          }}
+        />
+      )}
+
+      {/* Job Scheduler Modal */}
+      {mappings.length > 0 && (
+        <JobSchedulerModal
+          mappingId={mappings[0].id}
+          mappingName={
+            mappings.length > 0
+              ? `${sourceSchemas[selectedSourceIdx]?.name} → ${targetSchemas[selectedTargetIdx]?.name}`
+              : 'Mapping'
+          }
+          isOpen={showScheduler}
+          onClose={() => setShowScheduler(false)}
+          onScheduleSuccess={() => {
+            // Refresh history after scheduling
+            setActiveTab('history');
           }}
         />
       )}
