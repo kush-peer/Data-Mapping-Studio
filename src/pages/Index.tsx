@@ -1,4 +1,5 @@
-import React, { useState, useRef, useLayoutEffect } from 'react';
+import React, { useState, useRef, useLayoutEffect, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { SchemaPanel } from '../components/SchemaPanel';
 import { MappingCanvas } from '../components/MappingCanvas';
 import { TransformationPanel } from '../components/TransformationPanel';
@@ -8,6 +9,8 @@ import { Bot, Save, Play, Download, Upload } from 'lucide-react';
 import { Button } from '../components/ui/button';
 import { useToast } from '../hooks/use-toast';
 import { Select, SelectTrigger, SelectContent, SelectItem } from '../components/ui/select';
+import { useProject } from '@/contexts/ProjectContext';
+import { useProjectData } from '@/hooks/useProjectData';
 
 export interface SchemaField {
   id: string;
@@ -33,7 +36,17 @@ export interface Transformation {
 
 const Index = () => {
   const { toast } = useToast();
-  
+  const navigate = useNavigate();
+  const { currentProject } = useProject();
+  const { schemas, mappings: backendMappings, createSchemaFromFile, createMapping, executeMapping } = useProjectData();
+
+  // Redirect if no project selected
+  useEffect(() => {
+    if (!currentProject) {
+      navigate('/projects');
+    }
+  }, [currentProject, navigate]);
+
   const [sourceSchemas, setSourceSchemas] = useState<{name: string, fields: SchemaField[]}[]>([
     { name: "Accounts", fields: [
       { id: 'patient_id', name: 'Patient ID', type: 'string', required: true, example: 'P12345' },
@@ -124,7 +137,7 @@ const Index = () => {
     }
   };
 
-  const handleSchemaUpload = (fields: SchemaField[], type: 'source' | 'target', name: string) => {
+  const handleSchemaUpload = async (fields: SchemaField[], type: 'source' | 'target', name: string) => {
     if (type === 'source') {
       setSourceSchemas(prev => [...prev, { name, fields }]);
       setSelectedSourceIdx(sourceSchemas.length);
@@ -132,26 +145,83 @@ const Index = () => {
       setTargetSchemas(prev => [...prev, { name, fields }]);
       setSelectedTargetIdx(targetSchemas.length);
     }
+
+    // Also save to backend if we have a current project and this was from file upload
+    // The FileUploadPanel will handle calling this via a File object
     toast({
       title: "Schema Uploaded",
       description: `Successfully uploaded ${fields.length} fields to ${type} schema.`,
     });
   };
 
-  const handleSave = () => {
-    const mappingData = {
-      sourceSchemas,
-      targetSchemas,
-      mappings,
-      timestamp: new Date().toISOString()
-    };
-    
-    localStorage.setItem('rcm-mappings', JSON.stringify(mappingData));
-    
-    toast({
-      title: "Mappings Saved",
-      description: `Successfully saved ${mappings.length} field mappings.`,
-    });
+  const handleSave = async () => {
+    if (!currentProject) {
+      toast({
+        title: "No Project",
+        description: "Please select a project first.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (mappings.length === 0) {
+      toast({
+        title: "No Mappings",
+        description: "Please create some field mappings first.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (selectedSourceIdx < 0 || selectedTargetIdx < 0) {
+      toast({
+        title: "Invalid Selection",
+        description: "Please select both source and target schemas.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      const sourceSchema = sourceSchemas[selectedSourceIdx];
+      const targetSchema = targetSchemas[selectedTargetIdx];
+
+      // Convert local mappings to rules format
+      const rules = mappings.map(m => ({
+        source_field: m.sourceFieldId,
+        target_field: m.targetFieldId,
+        transformation: m.transformation || { type: 'direct' }
+      }));
+
+      // Save to backend
+      await createMapping(
+        sourceSchema.name,  // temp: use names since we don't have IDs yet
+        targetSchema.name,
+        `${sourceSchema.name} -> ${targetSchema.name}`,
+        rules
+      );
+
+      // Also save locally as backup
+      const mappingData = {
+        sourceSchemas,
+        targetSchemas,
+        mappings,
+        timestamp: new Date().toISOString()
+      };
+      localStorage.setItem('rcm-mappings', JSON.stringify(mappingData));
+
+      toast({
+        title: "Mappings Saved",
+        description: `Successfully saved ${mappings.length} field mappings to project.`,
+      });
+    } catch (error) {
+      console.error('Error saving mappings:', error);
+      toast({
+        title: "Save Failed",
+        description: "Failed to save mappings to project.",
+        variant: "destructive",
+      });
+    }
   };
 
   const handleTest = () => {
@@ -164,9 +234,10 @@ const Index = () => {
       return;
     }
 
+    // Show a message that user needs to upload data first
     toast({
-      title: "Test Complete",
-      description: `Tested ${mappings.length} mappings - all connections verified.`,
+      title: "Data Execution",
+      description: "To execute mappings, upload a data file using 'Upload Schema' button with data type, then click 'Execute'.",
     });
   };
 
@@ -204,7 +275,9 @@ const Index = () => {
           <div className="flex items-center justify-between">
             <div>
               <h1 className="text-2xl font-bold text-gray-900">Data-Mapping Studio</h1>
-              <p className="text-sm text-gray-600 mt-1">Intelligent data mapping and transformation platform</p>
+              <p className="text-sm text-gray-600 mt-1">
+                {currentProject ? `Project: ${currentProject.name}` : 'Intelligent data mapping and transformation platform'}
+              </p>
             </div>
             <div className="flex items-center ml-auto">
               <Button className="btn-nav" onClick={() => setShowFileUpload(true)}>
